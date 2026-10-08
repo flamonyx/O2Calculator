@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>O2Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#FE2C39; --coral:#FC826A;
+  --grad:linear-gradient(125deg,#FC826A 0%,#FD5A50 45%,#FE2C39 100%);
+  --red-soft:rgba(254,44,57,.08);
+  --bg:#F6F3F3; --surface:#FFFFFF; --surface-2:#FBF8F8; --ink:#25211F; --muted:#7D7073; --line:#EEE4E4;
+  --sf:system-ui;
+  --font:"Poppins",var(--sf),"Segoe UI",system-ui,-apple-system,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#18141A; --surface:#231E25; --surface-2:#2B252D; --ink:#F7F1F1; --muted:#B1A3A8; --line:#3A3239;
+    --red-soft:rgba(254,44,57,.16); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#18141A; --surface:#231E25; --surface-2:#2B252D; --ink:#F7F1F1; --muted:#B1A3A8; --line:#3A3239;
+  --red-soft:rgba(254,44,57,.16); color-scheme:dark;
+}
+html[lang="th"]{--sf:"Noto Sans Thai"}
+html[lang="ja"]{--sf:"Noto Sans JP"}
+html[lang="ko"]{--sf:"Noto Sans KR"}
+html[lang="zh"]{--sf:"Noto Sans SC"}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none!important}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15.5px;line-height:1.5;overflow-x:hidden}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+
+.ambient{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.ambient svg{position:absolute;fill:none;stroke:var(--red)}
+.ambient .a1{width:760px;height:760px;right:-300px;top:-260px;opacity:.08;animation:spin 90s linear infinite}
+.ambient .a2{width:560px;height:560px;left:-260px;bottom:-240px;opacity:.06;animation:spin 120s linear infinite reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.wrap{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:0 16px 36px}
+
+/* header */
+header{padding:14px 0 0;position:relative;z-index:10}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;position:relative;z-index:5}
+.logo{height:44px;width:auto;display:block;overflow:visible}
+.logo .ring{transform-origin:28px 32px;animation:ringIn 1.1s cubic-bezier(.2,.9,.25,1.15) both}
+.logo .sup{font:700 19px var(--font);animation:pop .5s .7s cubic-bezier(.3,1.6,.4,1) both;transform-origin:47px 14px}
+.logo .wm{font:600 36px var(--font);letter-spacing:-.5px;animation:wmIn .7s .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes ringIn{from{transform:rotate(-220deg) scale(.3);opacity:0}}
+@keyframes pop{from{transform:scale(0);opacity:0}}
+@keyframes wmIn{from{opacity:0;transform:translateX(-14px)}}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}}
+
+/* language picker */
+.lang{position:relative;animation:fade .6s .6s both}
+.langbtn{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:99px;height:40px;padding:0 12px 0 10px;cursor:pointer;font-size:14px;font-weight:600}
+.langbtn[aria-expanded="true"]{border-color:var(--red);box-shadow:0 0 0 4px var(--red-soft)}
+.langbtn .chev{width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-2px) rotate(45deg);margin-left:2px;transition:transform .25s}
+.langbtn[aria-expanded="true"] .chev{transform:translateY(2px) rotate(225deg)}
+.flag{width:24px;height:16px;border-radius:3px;overflow:hidden;flex:none;display:block;box-shadow:0 0 0 1px rgba(0,0,0,.1)}
+.flag svg{width:100%;height:100%;display:block}
+.langlist{position:absolute;right:0;top:calc(100% + 8px);z-index:30;list-style:none;margin:0;padding:6px;min-width:214px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 40px -18px rgba(0,0,0,.35);animation:drop .2s ease-out}
+@keyframes drop{from{opacity:0;transform:translateY(-6px)}}
+.langlist li{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;outline:none}
+.langlist li:hover,.langlist li:focus{background:var(--surface-2)}
+.langlist li[aria-selected="true"]{background:var(--red-soft);color:var(--red);font-weight:600}
+
+/* tabs */
+.tabs{display:flex;gap:6px;margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:5px;position:relative;animation:fade .6s .7s both}
+.tab{flex:1;border:0;background:none;padding:11px 8px;border-radius:12px;font-weight:600;font-size:15px;cursor:pointer;position:relative;z-index:1;color:var(--muted);transition:color .25s}
+.tab[aria-selected="true"]{color:#fff}
+.tab-ind{position:absolute;top:5px;bottom:5px;left:5px;width:calc(50% - 8px);background:var(--grad);border-radius:12px;transition:transform .4s cubic-bezier(.2,.8,.2,1);box-shadow:0 8px 20px -10px var(--red)}
+
+main{margin-top:16px;animation:fade .6s .8s both}
+.grid{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:880px){.grid{grid-template-columns:380px minmax(0,1fr);align-items:start}.inputs{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}}
+.stack{display:grid;gap:14px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:20px}
+.flabel{display:block;font-weight:600;font-size:14.5px;margin-bottom:8px}
+
+/* amount */
+.field{margin-bottom:20px}
+.inbox{display:flex;align-items:center;background:var(--surface-2);border:1.5px solid var(--line);border-radius:14px;padding:0 14px;transition:border-color .2s,box-shadow .2s}
+.inbox:focus-within{border-color:var(--red);box-shadow:0 0 0 4px var(--red-soft)}
+.inbox.bad{border-color:var(--red)}
+.inbox input{flex:1;min-width:0;width:100%;border:0;background:none;outline:none;padding:12px 0;font-weight:700;font-size:26px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.inbox .suf{font-size:13px;color:var(--muted);font-weight:600;margin-left:8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chip{border:1px solid var(--line);background:none;border-radius:99px;padding:5px 11px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);transition:border-color .2s,color .2s,transform .15s}
+.chip:hover{border-color:var(--red);color:var(--red)}
+.chip:active{transform:scale(.94)}
+.err{font-size:13px;color:var(--red);font-weight:500;margin-top:8px}
+
+/* tiers */
+.tiers{display:grid;gap:7px}
+.tier{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:10px 13px;border:1.5px solid var(--line);border-radius:14px;background:var(--surface-2);transition:border-color .3s,background .3s,box-shadow .3s}
+.tier .rg{font-weight:500;font-size:14px;font-variant-numeric:tabular-nums}
+.tier .tg{font-size:11.5px;font-weight:600;color:#fff;background:var(--grad);border-radius:99px;padding:2px 9px;opacity:0;transform:scale(.6);transition:opacity .25s,transform .35s cubic-bezier(.3,1.6,.4,1);white-space:nowrap}
+.tier .rt{text-align:right;line-height:1.15}
+.tier .rt b{display:block;font-weight:700;font-size:17px;font-variant-numeric:tabular-nums}
+.tier .rt span{font-size:11.5px;color:var(--muted)}
+.tier.on{border-color:var(--red);background:var(--red-soft);box-shadow:0 8px 18px -12px var(--red)}
+.tier.on .tg{opacity:1;transform:scale(1)}
+.tier.on .rt b{color:var(--red)}
+
+/* hero */
+.hero{background:var(--grad);color:#fff;border:0;position:relative;overflow:hidden;box-shadow:0 22px 40px -26px rgba(254,44,57,.75)}
+.hero .deco{position:absolute;right:-70px;top:-70px;width:250px;height:250px;opacity:.22;pointer-events:none}
+.hero .deco circle{fill:none;stroke:#fff}
+.hero .deco .arc{animation:spin 14s linear infinite;transform-origin:125px 125px}
+.hero .lbl{font-size:14px;font-weight:500;opacity:.92;position:relative}
+.big{font-weight:800;font-size:clamp(36px,10vw,56px);line-height:1.05;letter-spacing:-.025em;font-variant-numeric:tabular-nums;position:relative;margin-top:2px;overflow-wrap:anywhere}
+.big small{font-size:.34em;font-weight:600;letter-spacing:0;margin-left:6px;opacity:.85}
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:18px;border-top:1px solid rgba(255,255,255,.28);padding-top:14px;position:relative}
+.trio div{padding:0 10px;min-width:0}
+.trio div:first-child{padding-left:0}
+.trio div+div{border-left:1px solid rgba(255,255,255,.28)}
+.trio span{display:block;font-size:12.5px;opacity:.88;line-height:1.3}
+.trio b{display:block;font-weight:700;font-size:clamp(15px,4.2vw,21px);font-variant-numeric:tabular-nums;letter-spacing:-.01em;margin-top:3px;overflow-wrap:anywhere}
+
+/* break-even rail */
+.lbl2{font-size:14px;color:var(--muted);font-weight:500}
+.mid{font-weight:700;font-size:28px;line-height:1.15;letter-spacing:-.015em;font-variant-numeric:tabular-nums}
+.rail{position:relative;height:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:99px;margin:18px 0 30px}
+.rail .f1{position:absolute;left:0;top:0;bottom:0;border-radius:99px 0 0 99px;background:var(--ink);width:0;transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.rail .f2{position:absolute;top:0;bottom:0;right:0;border-radius:0 99px 99px 0;background:var(--grad);left:0;transition:left .7s cubic-bezier(.2,.8,.2,1)}
+.rail .pin{position:absolute;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;background:var(--surface);border:4px solid var(--red);border-radius:50%;left:0;transition:left .7s cubic-bezier(.2,.8,.2,1)}
+.rail .end{position:absolute;top:19px;font-size:12px;color:var(--muted);font-weight:500}
+.rail .end.s{left:0}.rail .end.e{right:0}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.line{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:14.5px;padding-top:12px;margin-top:14px;border-top:1px solid var(--line)}
+.line b{font-weight:700;font-size:19px;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+
+/* compare bars */
+.cmp{margin-top:14px}
+.cmp:first-of-type{margin-top:4px}
+.ch{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:14px;font-weight:500;margin-bottom:6px}
+.ch b{font-weight:700;font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ch b.red{color:var(--red)}
+.bar{display:flex;height:16px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.bar i{display:block;height:100%;width:0;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.bar .bc{background:var(--ink)}
+.bar .br{background:var(--grad)}
+.badge{display:inline-block;margin-top:14px;background:var(--grad);color:#fff;font-weight:600;font-size:13.5px;border-radius:99px;padding:5px 13px}
+.cmpcard .legend{margin-top:12px}
+
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{flex:1;min-width:140px;white-space:nowrap;border:0;border-radius:14px;padding:13px 16px;font-weight:600;font-size:14.5px;cursor:pointer;transition:transform .15s,filter .2s;display:inline-flex;justify-content:center;align-items:center;gap:8px;text-decoration:none}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--grad);color:#fff}
+.btn.pri:hover{filter:brightness(1.05)}
+.btn.sec{background:var(--surface);color:var(--ink);border:1.5px solid var(--line)}
+.btn svg{width:18px;height:18px;flex:none}
+.disc{font-size:12.5px;color:var(--muted);margin:0 2px;text-align:center}
+
+/* frequency */
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:4px}
+.seg button{border:0;background:none;border-radius:10px;padding:10px 4px;font-weight:600;font-size:14px;cursor:pointer;color:var(--muted);transition:background .25s,color .25s,opacity .25s}
+.seg button[aria-checked="true"]{background:var(--grad);color:#fff;box-shadow:0 6px 14px -8px var(--red)}
+.seg button[aria-disabled="true"]{opacity:.42;cursor:not-allowed;text-decoration:line-through;text-decoration-thickness:1.5px}
+.seg button.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
+.offs{margin-top:9px;font-size:12.8px;line-height:1.5;color:var(--red);background:var(--red-soft);border-radius:12px;padding:9px 12px}
+.offs p{margin:0}
+.offs p.why{color:var(--muted);margin-top:4px}
+
+/* duration slider */
+.range{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent;margin:0;cursor:pointer;--p:50%}
+.range::-webkit-slider-runnable-track{height:14px;border-radius:99px;background:linear-gradient(90deg,var(--ink) 0 var(--p),var(--red) var(--p) 100%)}
+.range::-moz-range-track{height:14px;border-radius:99px;background:linear-gradient(90deg,var(--ink) 0 var(--p),var(--red) var(--p) 100%)}
+.range::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;margin-top:-7px;border-radius:50%;background:var(--surface);border:5px solid var(--red);box-shadow:0 4px 12px -4px rgba(0,0,0,.35);transition:transform .15s}
+.range::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--surface);border:5px solid var(--red);box-shadow:0 4px 12px -4px rgba(0,0,0,.35)}
+.range:active::-webkit-slider-thumb{transform:scale(1.12)}
+.range:focus-visible{outline:none}
+.range:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 5px var(--red-soft)}
+.ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:2px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.split div{border-radius:14px;padding:10px 12px;border:1.5px solid var(--line)}
+.split .sl{border-color:var(--ink)}
+.split .sr{border-color:var(--red);background:var(--red-soft)}
+.split span{display:block;font-size:12.5px;color:var(--muted);font-weight:500}
+.split b{display:block;font-weight:700;font-size:18px;line-height:1.25;font-variant-numeric:tabular-nums}
+.split .sr b{color:var(--red)}
+.split em{display:block;font-style:normal;font-size:12px;color:var(--muted)}
+
+
+/* compounding steps */
+.steps{padding:22px 20px}
+.step{display:grid;grid-template-columns:34px minmax(0,1fr);gap:14px;position:relative;padding-bottom:24px}
+.step:not(.last)::before{content:"";position:absolute;left:16px;top:40px;bottom:6px;width:2px;background:var(--line)}
+.step.last{padding-bottom:0}
+.dot{width:34px;height:34px;border-radius:50%;background:var(--grad);color:#fff;font-weight:700;font-size:15px;display:grid;place-items:center;box-shadow:0 6px 14px -8px var(--red)}
+.rng{display:block;font-size:12.5px;color:var(--muted);font-weight:500;line-height:1.3}
+.st{display:block;font-size:17px;font-weight:700;line-height:1.35}
+.ss{margin:2px 0 10px;font-size:13.5px;color:var(--muted);line-height:1.45}
+.flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:11px 14px;font-variant-numeric:tabular-nums}
+.flow span{font-weight:600;font-size:16px;color:var(--muted)}
+.flow svg{width:20px;height:20px;fill:none;stroke:var(--red);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.flow b{font-weight:700;font-size:22px;letter-spacing:-.01em;white-space:nowrap}
+.flow small{font-size:12px;font-weight:600;color:var(--muted);margin-left:-4px}
+.flow.red{background:var(--red-soft);border-color:transparent}
+.flow.red span{font-size:14px;font-weight:500}
+.flow.red b{color:var(--red);margin-left:auto}
+.total{background:var(--grad);color:#fff;border-radius:18px;padding:14px 18px 16px;margin-top:4px;box-shadow:0 22px 40px -26px rgba(254,44,57,.75)}
+.total>span{font-size:14px;font-weight:500;opacity:.92}
+.total .big{font-size:clamp(32px,9vw,46px)}
+.total p{margin:6px 0 0;font-size:13px;opacity:.92;font-variant-numeric:tabular-nums}
+.bar .br,.bar .bc{border-radius:99px}
+.dim{opacity:.38;pointer-events:none;filter:grayscale(.6);transition:opacity .3s,filter .3s}
+.emptymsg{font-size:14px;font-weight:500;color:var(--red);background:var(--red-soft);border-radius:14px;padding:12px 14px;margin:0}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,40px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:99px;font-weight:600;font-size:14px;opacity:0;transition:all .3s;z-index:40;pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.bump{animation:bump .45s}
+@keyframes bump{40%{transform:scale(1.03)}}
+
+@media (max-width:420px){
+  .card{padding:16px;border-radius:20px}
+  .logo{height:38px}
+  .langbtn .nm{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .ambient{display:none}
+}
+</style>
+</head>
+<body>
+<div class="ambient" aria-hidden="true">
+  <svg class="a1" viewBox="0 0 200 200"><circle cx="100" cy="100" r="96" stroke-width="1"/><circle cx="100" cy="100" r="80" stroke-width="7" stroke-dasharray="380 123"/><circle cx="100" cy="100" r="62" stroke-width="1.2" stroke-dasharray="2 5"/></svg>
+  <svg class="a2" viewBox="0 0 200 200"><circle cx="100" cy="100" r="94" stroke-width="6" stroke-dasharray="420 170"/><circle cx="100" cy="100" r="74" stroke-width="1"/></svg>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="top">
+      <svg class="logo" viewBox="0 0 252 60" role="img" aria-label="O2Calculator">
+        <defs><linearGradient id="lg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="252" y2="0"><stop offset="0" stop-color="#FC826A"/><stop offset="1" stop-color="#FE2C39"/></linearGradient></defs>
+        <g class="ring">
+          <circle cx="28" cy="32" r="22" fill="none" stroke="url(#lg)" stroke-width="7" stroke-linecap="round" stroke-dasharray="110 28.2" transform="rotate(-6 28 32)"/>
+          <circle cx="28" cy="32" r="12.5" fill="none" stroke="url(#lg)" stroke-width="4.5"/>
+        </g>
+        <text class="sup" x="42" y="18" fill="url(#lg)">2</text>
+        <text class="wm" x="58" y="45" fill="url(#lg)">calculator</text>
+      </svg>
+      <div class="lang" id="lang">
+        <button class="langbtn" id="langBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Language"><span class="flag" id="langFlag"></span><span class="nm" id="langName"></span><span class="chev" aria-hidden="true"></span></button>
+        <ul class="langlist" id="langList" role="listbox" aria-label="Language" hidden></ul>
+      </div>
+    </div>
+    <div class="tabs" role="tablist">
+      <span class="tab-ind" id="tabInd"></span>
+      <button class="tab" role="tab" id="t-p" aria-selected="true" aria-controls="p-p" data-i18n="tab_p"></button>
+      <button class="tab" role="tab" id="t-c" aria-selected="false" aria-controls="p-c" data-i18n="tab_c"></button>
+    </div>
+  </header>
+
+  <main>
+    <!-- PASSIVE -->
+    <section id="p-p" role="tabpanel" aria-labelledby="t-p">
+      <div class="grid">
+        <div class="inputs card">
+          <div class="field">
+            <label class="flabel" for="amt" data-i18n="amt_label"></label>
+            <div class="inbox" id="amtBox"><input id="amt" inputmode="decimal" autocomplete="off" value="1,000" placeholder="1,000"><span class="suf">USDT</span></div>
+            <div class="err" id="amtErr" hidden data-i18n="min_err"></div>
+            <div class="chips" data-target="amt">
+              <button class="chip" data-v="100">100</button>
+              <button class="chip" data-v="500">500</button>
+              <button class="chip" data-v="1000">1K</button>
+              <button class="chip" data-v="5000">5K</button>
+              <button class="chip" data-v="10000">10K</button>
+              <button class="chip" data-v="50000">50K</button>
+            </div>
+          </div>
+          <span class="flabel" data-i18n="tier_lbl"></span>
+          <div class="tiers">
+            <div class="tier" data-i="0"><span class="rg">100 – 999</span><span class="tg" data-i18n="tier_here"></span><span class="rt"><b>0.36%±</b><span data-i18n="per_day_short"></span></span></div>
+            <div class="tier" data-i="1"><span class="rg">1,000 – 9,999</span><span class="tg" data-i18n="tier_here"></span><span class="rt"><b>0.4%±</b><span data-i18n="per_day_short"></span></span></div>
+            <div class="tier" data-i="2"><span class="rg">10,000+</span><span class="tg" data-i18n="tier_here"></span><span class="rt"><b>0.45%±</b><span data-i18n="per_day_short"></span></span></div>
+          </div>
+        </div>
+
+        <div class="stack" id="pRes">
+          <div class="card hero">
+            <svg class="deco" viewBox="0 0 250 250" aria-hidden="true"><circle cx="125" cy="125" r="112" stroke-width="22"/><circle cx="125" cy="125" r="70" stroke-width="10"/><circle class="arc" cx="125" cy="125" r="112" stroke-width="22" stroke-dasharray="120 584" stroke-linecap="round"/></svg>
+            <div class="lbl" data-i18n="d_lbl"></div>
+            <div class="big"><span id="pD">0.00</span><small>USDT</small></div>
+            <div class="trio">
+              <div><span data-i18n="w_lbl"></span><b id="pW">0.00</b></div>
+              <div><span data-i18n="m_lbl"></span><b id="pM">0.00</b></div>
+              <div><span data-i18n="y_lbl"></span><b id="pY">0.00</b></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="lbl2" data-i18n="be_lbl"></div>
+            <div class="mid" id="beDay">—</div>
+            <div class="rail" aria-hidden="true">
+              <div class="f1" id="rF1"></div><div class="f2" id="rF2"></div>
+              <div class="pin" id="rPin"></div>
+              <span class="end s" data-i18n="day0"></span><span class="end e" data-i18n="day365"></span>
+            </div>
+            <div class="legend">
+              <span><i style="background:var(--ink)"></i><span data-i18n="leg_cap"></span></span>
+              <span><i style="background:var(--red)"></i><span data-i18n="leg_cash"></span></span>
+            </div>
+            <div class="line"><span data-i18n="end_lbl"></span><b id="pEnd">0.00</b></div>
+          </div>
+
+          <div class="actions">
+            <a class="btn pri" id="waP" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.9 2.9 0 0 0-.9 2.2 5 5 0 0 0 1 2.7 11.6 11.6 0 0 0 4.5 3.9c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.3c0-.1-.2-.2-.4-.3z"/></svg><span data-i18n="share"></span></a>
+            <button class="btn sec" id="cpP" data-i18n="copy"></button>
+          </div>
+          <p class="disc" data-i18n="disc"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMPOUNDING -->
+    <section id="p-c" role="tabpanel" aria-labelledby="t-c" hidden>
+      <div class="grid">
+        <div class="inputs card">
+          <div class="field">
+            <label class="flabel" for="camt" data-i18n="c_amt"></label>
+            <div class="inbox" id="camtBox"><input id="camt" inputmode="decimal" autocomplete="off" value="100,000" placeholder="100,000"><span class="suf">USDT</span></div>
+            <div class="err" id="camtErr" hidden data-i18n="min_err"></div>
+            <div class="chips" data-target="camt">
+              <button class="chip" data-v="1000">1K</button>
+              <button class="chip" data-v="5000">5K</button>
+              <button class="chip" data-v="25000">25K</button>
+              <button class="chip" data-v="50000">50K</button>
+              <button class="chip" data-v="100000">100K</button>
+            </div>
+          </div>
+          <div class="field">
+            <span class="flabel" id="freqLbl" data-i18n="c_freq"></span>
+            <div class="seg" role="radiogroup" aria-labelledby="freqLbl" id="seg">
+              <button role="radio" data-p="1" aria-checked="true" data-i18n="f_day"></button>
+              <button role="radio" data-p="7" aria-checked="false" data-i18n="f_week"></button>
+              <button role="radio" data-p="30" aria-checked="false" data-i18n="f_month"></button>
+            </div>
+            <div class="offs" id="offs" aria-live="polite" hidden></div>
+          </div>
+          <div id="slBlock">
+            <label class="flabel" for="dur" data-i18n="c_len"></label>
+            <input type="range" class="range" id="dur" min="1" max="364" value="180" step="1">
+            <div class="ends"><span data-i18n="day0"></span><span data-i18n="day365"></span></div>
+            <div class="split">
+              <div class="sl"><span data-i18n="seg_comp"></span><b id="cmpL">—</b><em id="cmpD"></em></div>
+              <div class="sr"><span data-i18n="seg_cash"></span><b id="cashL">—</b></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <p class="emptymsg" id="cEmpty" hidden></p>
+          <div class="stack" id="cRes">
+            <div class="card steps">
+              <div class="step">
+                <span class="dot">1</span>
+                <div class="sb">
+                  <span class="rng" id="s1r"></span>
+                  <b class="st" id="s1t"></b>
+                  <p class="ss" data-i18n="s1_s"></p>
+                  <div class="flow"><span id="s1a"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg><b id="s1b">0</b><small>USDT</small></div>
+                </div>
+              </div>
+              <div class="step">
+                <span class="dot">2</span>
+                <div class="sb">
+                  <span class="rng" id="s2r"></span>
+                  <b class="st" data-i18n="s2_t"></b>
+                  <p class="ss" id="s2s"></p>
+                  <div class="flow red"><span data-i18n="s2_r"></span><b id="s2v">0</b><small>USDT</small></div>
+                </div>
+              </div>
+              <div class="step last">
+                <span class="dot">3</span>
+                <div class="sb">
+                  <span class="rng" data-i18n="day365"></span>
+                  <div class="total">
+                    <span data-i18n="s3_t"></span>
+                    <div class="big"><span id="s3v">0</span><small>USDT</small></div>
+                    <p id="s3s"></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card cmpcard">
+              <span class="flabel" data-i18n="cmp_title"></span>
+              <div class="cmp"><div class="ch"><span data-i18n="bar_with"></span><b class="red" id="cTot">0</b></div><div class="bar"><i class="br" id="bW"></i></div></div>
+              <div class="cmp"><div class="ch"><span data-i18n="bar_without"></span><b id="cPlain">0</b></div><div class="bar"><i class="bc" id="bN"></i></div></div>
+              <span class="badge" id="cExtra"></span>
+            </div>
+
+            <div class="actions">
+              <a class="btn pri" id="waC" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.9 2.9 0 0 0-.9 2.2 5 5 0 0 0 1 2.7 11.6 11.6 0 0 0 4.5 3.9c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.3c0-.1-.2-.2-.4-.3z"/></svg><span data-i18n="share"></span></a>
+              <button class="btn sec" id="cpC" data-i18n="copy"></button>
+            </div>
+          </div>
+          <p class="disc" data-i18n="disc"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+/* net daily rate after profit sharing (0.9% avg x 40% / 45% / 50%) */
+var TIERS=[{lo:100,hi:999.999999,r:0.0036},{lo:1000,hi:9999.999999,r:0.004},{lo:10000,hi:Infinity,r:0.0045}];
+var MIN=100,YEAR=365,MIN_COMPOUND=100;
+function tierIdx(c){return c>=10000?2:c>=1000?1:c>=100?0:-1}
+function rate(c){var i=tierIdx(c);return i<0?0:TIERS[i].r}
+function minCap(P){for(var i=0;i<TIERS.length;i++){var c=Math.max(TIERS[i].lo,Math.ceil(MIN_COMPOUND/(TIERS[i].r*P)));if(c<=TIERS[i].hi)return c}return Infinity}
+
+var T={
+ms:{tab_p:"Passive Staking",tab_c:"Compounding",amt_label:"Bajet (USDT)",c_amt:"Modal (USDT)",min_err:"Minimum 100 USDT",tier_lbl:"Kadar sehari",per_day_short:"sehari",tier_here:"Bajet anda",d_lbl:"Untung sehari",w_lbl:"Seminggu",m_lbl:"Sebulan",y_lbl:"Setahun",be_lbl:"Balik modal",be_val:"Hari ke-{d}",day0:"Hari 0",day365:"Hari 365",leg_cap:"Modal",leg_cash:"Untung",end_lbl:"Jumlah selepas 365 hari",disc:"Anggaran sahaja, bukan jaminan.",share:"Share ke WhatsApp",copy:"Salin",copied:"Dah disalin",c_freq:"Compound setiap",f_day:"Hari",f_week:"Minggu",f_month:"Bulan",fo_1:"Harian: min modal {m} USDT",fo_7:"Mingguan: min modal {m} USDT",fo_30:"Bulanan: min modal {m} USDT",off_why:"Untung setiap pusingan mesti 100 USDT ke atas untuk compound.",none_ok:"Minimum {m} USDT untuk compound.",c_len:"Tempoh compound",seg_comp:"Compound",seg_cash:"Cairkan",u_day:"{n} hari",u_week:"{n} minggu",u_month:"{n} bulan",concl_cash:"Boleh dicairkan dalam setahun",concl_hold:"Holding power",cap_after:"Modal jadi",daily_after:"Untung sehari jadi",cmp_title:"Jumlah aset selepas setahun",bar_with:"Compound",bar_without:"Tak compound",extra:"+{x} USDT lebih"},
+en:{tab_p:"Passive Staking",tab_c:"Compounding",amt_label:"Budget (USDT)",c_amt:"Capital (USDT)",min_err:"Minimum 100 USDT",tier_lbl:"Daily rate",per_day_short:"per day",tier_here:"Your budget",d_lbl:"Profit per day",w_lbl:"Per week",m_lbl:"Per month",y_lbl:"Per year",be_lbl:"Capital back",be_val:"Day {d}",day0:"Day 0",day365:"Day 365",leg_cap:"Capital",leg_cash:"Profit",end_lbl:"Total after 365 days",disc:"Estimate only, not guaranteed.",share:"Share to WhatsApp",copy:"Copy",copied:"Copied",c_freq:"Compound every",f_day:"Day",f_week:"Week",f_month:"Month",fo_1:"Daily: min {m} USDT capital",fo_7:"Weekly: min {m} USDT capital",fo_30:"Monthly: min {m} USDT capital",off_why:"Each round's profit must be 100 USDT or more to compound.",none_ok:"Minimum {m} USDT to compound.",c_len:"Compound for",seg_comp:"Compound",seg_cash:"Withdraw",u_day:["{n} day","{n} days"],u_week:["{n} week","{n} weeks"],u_month:["{n} month","{n} months"],concl_cash:"Withdrawable within 1 year",concl_hold:"Hold for",cap_after:"Capital grows to",daily_after:"Daily profit becomes",cmp_title:"Total assets after 1 year",bar_with:"Compound",bar_without:"No compounding",extra:"+{x} USDT more"},
+id:{tab_p:"Passive Staking",tab_c:"Compounding",amt_label:"Budget (USDT)",c_amt:"Modal (USDT)",min_err:"Minimal 100 USDT",tier_lbl:"Rate harian",per_day_short:"per hari",tier_here:"Budget Anda",d_lbl:"Profit per hari",w_lbl:"Per minggu",m_lbl:"Per bulan",y_lbl:"Per tahun",be_lbl:"Balik modal",be_val:"Hari ke-{d}",day0:"Hari 0",day365:"Hari 365",leg_cap:"Modal",leg_cash:"Profit",end_lbl:"Total setelah 365 hari",disc:"Hanya estimasi, bukan jaminan.",share:"Bagikan ke WhatsApp",copy:"Salin",copied:"Disalin",c_freq:"Compound setiap",f_day:"Hari",f_week:"Minggu",f_month:"Bulan",fo_1:"Harian: modal min {m} USDT",fo_7:"Mingguan: modal min {m} USDT",fo_30:"Bulanan: modal min {m} USDT",off_why:"Profit tiap putaran harus 100 USDT ke atas untuk compound.",none_ok:"Minimal {m} USDT untuk compound.",c_len:"Lama compound",seg_comp:"Compound",seg_cash:"Tarik",u_day:"{n} hari",u_week:"{n} minggu",u_month:"{n} bulan",concl_cash:"Bisa ditarik dalam setahun",concl_hold:"Holding power",cap_after:"Modal menjadi",daily_after:"Profit harian menjadi",cmp_title:"Total aset setelah setahun",bar_with:"Compound",bar_without:"Tanpa compound",extra:"+{x} USDT lebih"},
+ja:{tab_p:"パッシブステーキング",tab_c:"複利運用",amt_label:"予算（USDT）",c_amt:"元本（USDT）",min_err:"最低100 USDT",tier_lbl:"1日の利率",per_day_short:"/日",tier_here:"あなたの予算",d_lbl:"1日の利益",w_lbl:"1週間",m_lbl:"1か月",y_lbl:"1年",be_lbl:"元本回収",be_val:"{d}日目",day0:"0日目",day365:"365日目",leg_cap:"元本",leg_cash:"利益",end_lbl:"365日後の合計",disc:"概算であり、保証ではありません。",share:"WhatsAppで共有",copy:"コピー",copied:"コピーしました",c_freq:"複利の頻度",f_day:"毎日",f_week:"毎週",f_month:"毎月",fo_1:"毎日：元本{m} USDT以上",fo_7:"毎週：元本{m} USDT以上",fo_30:"毎月：元本{m} USDT以上",off_why:"複利には1回あたりの利益が100 USDT以上必要です。",none_ok:"複利は最低{m} USDTから。",c_len:"複利の期間",seg_comp:"複利",seg_cash:"引き出し",u_day:"{n}日",u_week:"{n}週間",u_month:"{n}か月",concl_cash:"1年間で引き出せる額",concl_hold:"ホールド期間",cap_after:"複利後の元本",daily_after:"複利後の1日の利益",cmp_title:"1年後の総資産",bar_with:"複利あり",bar_without:"複利なし",extra:"+{x} USDT"},
+th:{tab_p:"Passive Staking",tab_c:"ทบต้น",amt_label:"งบ (USDT)",c_amt:"ทุน (USDT)",min_err:"ขั้นต่ำ 100 USDT",tier_lbl:"อัตราต่อวัน",per_day_short:"ต่อวัน",tier_here:"งบของคุณ",d_lbl:"กำไรต่อวัน",w_lbl:"ต่อสัปดาห์",m_lbl:"ต่อเดือน",y_lbl:"ต่อปี",be_lbl:"คืนทุน",be_val:"วันที่ {d}",day0:"วันที่ 0",day365:"วันที่ 365",leg_cap:"ทุน",leg_cash:"กำไร",end_lbl:"รวมหลัง 365 วัน",disc:"เป็นการประมาณการ ไม่รับประกัน",share:"แชร์ไป WhatsApp",copy:"คัดลอก",copied:"คัดลอกแล้ว",c_freq:"ทบต้นทุก",f_day:"วัน",f_week:"สัปดาห์",f_month:"เดือน",fo_1:"รายวัน: ทุนขั้นต่ำ {m} USDT",fo_7:"รายสัปดาห์: ทุนขั้นต่ำ {m} USDT",fo_30:"รายเดือน: ทุนขั้นต่ำ {m} USDT",off_why:"กำไรแต่ละรอบต้องได้ 100 USDT ขึ้นไปจึงจะทบต้นได้",none_ok:"ทบต้นขั้นต่ำ {m} USDT",c_len:"ระยะเวลาทบต้น",seg_comp:"ทบต้น",seg_cash:"ถอน",u_day:"{n} วัน",u_week:"{n} สัปดาห์",u_month:"{n} เดือน",concl_cash:"ถอนได้ภายใน 1 ปี",concl_hold:"ต้องถือ",cap_after:"ทุนเพิ่มเป็น",daily_after:"กำไรต่อวันเป็น",cmp_title:"สินทรัพย์รวมหลัง 1 ปี",bar_with:"ทบต้น",bar_without:"ไม่ทบต้น",extra:"+{x} USDT"},
+ko:{tab_p:"패시브 스테이킹",tab_c:"복리",amt_label:"예산 (USDT)",c_amt:"원금 (USDT)",min_err:"최소 100 USDT",tier_lbl:"일일 수익률",per_day_short:"/일",tier_here:"내 예산",d_lbl:"하루 수익",w_lbl:"1주",m_lbl:"1개월",y_lbl:"1년",be_lbl:"원금 회수",be_val:"{d}일째",day0:"0일",day365:"365일",leg_cap:"원금",leg_cash:"수익",end_lbl:"365일 후 합계",disc:"추정치이며 보장되지 않습니다.",share:"WhatsApp 공유",copy:"복사",copied:"복사했습니다",c_freq:"복리 주기",f_day:"매일",f_week:"매주",f_month:"매월",fo_1:"매일: 원금 {m} USDT 이상",fo_7:"매주: 원금 {m} USDT 이상",fo_30:"매월: 원금 {m} USDT 이상",off_why:"복리하려면 회차당 수익이 100 USDT 이상이어야 합니다.",none_ok:"복리는 최소 {m} USDT부터.",c_len:"복리 기간",seg_comp:"복리",seg_cash:"인출",u_day:"{n}일",u_week:"{n}주",u_month:"{n}개월",concl_cash:"1년 안에 인출 가능",concl_hold:"홀딩 기간",cap_after:"복리 후 원금",daily_after:"복리 후 하루 수익",cmp_title:"1년 후 총자산",bar_with:"복리",bar_without:"복리 없음",extra:"+{x} USDT"},
+zh:{tab_p:"被动质押",tab_c:"复利",amt_label:"预算（USDT）",c_amt:"本金（USDT）",min_err:"最低100 USDT",tier_lbl:"每日收益率",per_day_short:"/天",tier_here:"你的预算",d_lbl:"每日收益",w_lbl:"每周",m_lbl:"每月",y_lbl:"每年",be_lbl:"回本",be_val:"第{d}天",day0:"第0天",day365:"第365天",leg_cap:"本金",leg_cash:"收益",end_lbl:"365天后合计",disc:"仅为估算，不作保证。",share:"分享到WhatsApp",copy:"复制",copied:"已复制",c_freq:"复利频率",f_day:"每天",f_week:"每周",f_month:"每月",fo_1:"每天：本金至少{m} USDT",fo_7:"每周：本金至少{m} USDT",fo_30:"每月：本金至少{m} USDT",off_why:"每次收益需达100 USDT以上才能复利。",none_ok:"复利最低{m} USDT。",c_len:"复利时长",seg_comp:"复利",seg_cash:"提取",u_day:"{n}天",u_week:"{n}周",u_month:"{n}个月",concl_cash:"一年内可提取",concl_hold:"需持有",cap_after:"本金增至",daily_after:"每日收益增至",cmp_title:"一年后总资产",bar_with:"复利",bar_without:"不复利",extra:"+{x} USDT"},
+hi:{tab_p:"पैसिव स्टेकिंग",tab_c:"कंपाउंडिंग",amt_label:"बजट (USDT)",c_amt:"पूंजी (USDT)",min_err:"न्यूनतम 100 USDT",tier_lbl:"रोज़ की दर",per_day_short:"प्रतिदिन",tier_here:"आपका बजट",d_lbl:"रोज़ का मुनाफ़ा",w_lbl:"प्रति सप्ताह",m_lbl:"प्रति माह",y_lbl:"प्रति वर्ष",be_lbl:"पूंजी वापस",be_val:"दिन {d}",day0:"दिन 0",day365:"दिन 365",leg_cap:"पूंजी",leg_cash:"मुनाफ़ा",end_lbl:"365 दिन बाद कुल",disc:"केवल अनुमान, गारंटी नहीं।",share:"WhatsApp पर शेयर करें",copy:"कॉपी करें",copied:"कॉपी हो गया",c_freq:"कंपाउंड हर",f_day:"दिन",f_week:"सप्ताह",f_month:"महीना",fo_1:"रोज़: न्यूनतम पूंजी {m} USDT",fo_7:"साप्ताहिक: न्यूनतम पूंजी {m} USDT",fo_30:"मासिक: न्यूनतम पूंजी {m} USDT",off_why:"कंपाउंड के लिए हर बार का मुनाफ़ा 100 USDT या ज़्यादा होना चाहिए।",none_ok:"कंपाउंडिंग के लिए न्यूनतम {m} USDT।",c_len:"कंपाउंड अवधि",seg_comp:"कंपाउंड",seg_cash:"निकासी",u_day:"{n} दिन",u_week:"{n} सप्ताह",u_month:["{n} महीना","{n} महीने"],concl_cash:"1 साल में निकाल सकते हैं",concl_hold:"होल्ड अवधि",cap_after:"पूंजी बढ़कर",daily_after:"रोज़ का मुनाफ़ा बढ़कर",cmp_title:"1 साल बाद कुल संपत्ति",bar_with:"कंपाउंड",bar_without:"बिना कंपाउंड",extra:"+{x} USDT ज़्यादा"}
+};
+
+var T2={
+ms:{rng:"Hari {a} – {b}",s1_t:"Compound {dur}",s1_s:"Untung tak dikeluarkan, masuk balik ke modal.",s2_t:"Keluarkan untung setiap hari",s2_r:"Masuk poket",s3_t:"Hujung tahun, anda ada",s3_s:"Modal {a} + untung dikeluarkan {b}",cmp_title:"Kalau tak compound?"},
+en:{rng:"Day {a} – {b}",s1_t:"Compound for {dur}",s1_s:"Don't withdraw. Profit goes back into capital.",s2_t:"Withdraw profit every day",s2_r:"Into your pocket",s3_t:"By year end you have",s3_s:"Capital {a} + withdrawn profit {b}",cmp_title:"What if you don't compound?"},
+id:{rng:"Hari {a} – {b}",s1_t:"Compound {dur}",s1_s:"Profit tidak ditarik, masuk kembali ke modal.",s2_t:"Tarik profit setiap hari",s2_r:"Masuk kantong",s3_t:"Akhir tahun, Anda punya",s3_s:"Modal {a} + profit ditarik {b}",cmp_title:"Kalau tidak compound?"},
+ja:{rng:"{a}〜{b}日目",s1_t:"{dur}複利運用",s1_s:"利益は引き出さず、元本に再投資します。",s2_t:"毎日利益を引き出す",s2_r:"手元に入る額",s3_t:"1年後の合計",s3_s:"元本{a}＋引き出した利益{b}",cmp_title:"複利しない場合は？"},
+th:{rng:"วันที่ {a} – {b}",s1_t:"ทบต้น {dur}",s1_s:"ไม่ถอนกำไร นำกลับเข้าทุน",s2_t:"ถอนกำไรทุกวัน",s2_r:"เข้ากระเป๋า",s3_t:"สิ้นปีคุณมี",s3_s:"ทุน {a} + กำไรที่ถอน {b}",cmp_title:"ถ้าไม่ทบต้นล่ะ?"},
+ko:{rng:"{a}~{b}일째",s1_t:"{dur} 복리",s1_s:"수익을 인출하지 않고 원금에 다시 넣습니다.",s2_t:"매일 수익 인출",s2_r:"내 손에 들어오는 돈",s3_t:"1년 후 보유액",s3_s:"원금 {a} + 인출 수익 {b}",cmp_title:"복리를 안 하면?"},
+zh:{rng:"第{a}–{b}天",s1_t:"复利{dur}",s1_s:"收益不提取，投回本金。",s2_t:"每天提取收益",s2_r:"到手",s3_t:"年底你拥有",s3_s:"本金{a}＋已提取收益{b}",cmp_title:"如果不复利？"},
+hi:{rng:"दिन {a} – {b}",s1_t:"{dur} कंपाउंड",s1_s:"मुनाफ़ा न निकालें, वापस पूंजी में डालें।",s2_t:"रोज़ मुनाफ़ा निकालें",s2_r:"आपकी जेब में",s3_t:"साल के अंत में आपके पास",s3_s:"पूंजी {a} + निकाला मुनाफ़ा {b}",cmp_title:"अगर कंपाउंड न करें?"}
+};
+for(var _l in T2){for(var _k in T2[_l])T[_l][_k]=T2[_l][_k]}
+
+/* ---------- flags (inline SVG) ---------- */
+function star(cx,cy,R,r,n,rot){var p=[];for(var i=0;i<n*2;i++){var a=(rot||-90)*Math.PI/180+i*Math.PI/n,rr=i%2?r:R;p.push((cx+rr*Math.cos(a)).toFixed(2)+','+(cy+rr*Math.sin(a)).toFixed(2))}return '<polygon points="'+p.join(' ')+'"/>'}
+var uid=0;
+function FLAG(c){
+  var u='f'+(uid++),s='<svg viewBox="',e='</svg>',P=' preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">';
+  switch(c){
+  case 'my':var st='';for(var i=0;i<14;i++)st+='<rect y="'+i+'" width="28" height="1" fill="'+(i%2?'#fff':'#CC0001')+'"/>';
+    return s+'0 0 28 14"'+P+st+'<rect width="14" height="8" fill="#010066"/><circle cx="5.6" cy="4" r="3" fill="#FC0"/><circle cx="6.6" cy="4" r="2.5" fill="#010066"/><g fill="#FC0">'+star(10.3,4,2,.8,14)+'</g>'+e;
+  case 'gb':return s+'0 0 60 30"'+P+'<clipPath id="'+u+'a"><path d="M30,15h30v15zv15h-30zh-30v-15zv-15h30z"/></clipPath><rect width="60" height="30" fill="#012169"/><path d="M0,0L60,30M60,0L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0L60,30M60,0L0,30" clip-path="url(#'+u+'a)" stroke="#C8102E" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#C8102E" stroke-width="6"/>'+e;
+  case 'id':return s+'0 0 3 2"'+P+'<rect width="3" height="2" fill="#fff"/><rect width="3" height="1" fill="#E70011"/>'+e;
+  case 'jp':return s+'0 0 3 2"'+P+'<rect width="3" height="2" fill="#fff"/><circle cx="1.5" cy="1" r=".6" fill="#BC002D"/>'+e;
+  case 'th':return s+'0 0 9 6"'+P+'<rect width="9" height="6" fill="#A51931"/><rect y="1" width="9" height="4" fill="#F4F5F8"/><rect y="2" width="9" height="2" fill="#2D2A4A"/>'+e;
+  case 'kr':var bars=function(x,y,a){return '<g transform="translate('+x+' '+y+') rotate('+a+')" fill="#000"><rect x="-3" y="-2.4" width="6" height="1.1"/><rect x="-3" y="-.55" width="6" height="1.1"/><rect x="-3" y="1.3" width="6" height="1.1"/></g>'};
+    return s+'0 0 36 24"'+P+'<rect width="36" height="24" fill="#fff"/><g transform="rotate(33.7 18 12)"><path d="M12,12a6,6 0 0 1 12,0z" fill="#CD2E3A"/><path d="M12,12a6,6 0 0 0 12,0z" fill="#0047A0"/><circle cx="15" cy="12" r="3" fill="#CD2E3A"/><circle cx="21" cy="12" r="3" fill="#0047A0"/></g>'+bars(7,5.2,-56.3)+bars(29,18.8,-56.3)+bars(29,5.2,56.3)+bars(7,18.8,56.3)+e;
+  case 'cn':return s+'0 0 30 20"'+P+'<rect width="30" height="20" fill="#EE1C25"/><g fill="#FFFF00">'+star(5,5,3,1.15,5)+star(10,2,1,.38,5,-36)+star(12,4,1,.38,5,-14)+star(12,7,1,.38,5,0)+star(10,9,1,.38,5,-50)+'</g>'+e;
+  case 'in':return s+'0 0 3 2"'+P+'<rect width="3" height="2" fill="#fff"/><rect width="3" height=".667" fill="#FF9933"/><rect y="1.333" width="3" height=".667" fill="#138808"/><circle cx="1.5" cy="1" r=".2" fill="none" stroke="#000080" stroke-width=".045"/><circle cx="1.5" cy="1" r=".04" fill="#000080"/>'+e;
+  }return '';
+}
+var LANGS=[{v:'ms',n:'Bahasa Melayu',f:'my'},{v:'en',n:'English',f:'gb'},{v:'id',n:'Bahasa Indonesia',f:'id'},{v:'ja',n:'日本語',f:'jp'},{v:'th',n:'ไทย',f:'th'},{v:'ko',n:'한국어',f:'kr'},{v:'zh',n:'中文',f:'cn'},{v:'hi',n:'हिन्दी',f:'in'}];
+var FONTS={th:"Noto+Sans+Thai:wght@400;500;600;700",ja:"Noto+Sans+JP:wght@400;500;700",ko:"Noto+Sans+KR:wght@400;500;700",zh:"Noto+Sans+SC:wght@400;500;700"};
+var loaded={},lang='ms';
+function fill(s,v){return v?String(s).replace(/\{(\w+)\}/g,function(_,x){return v[x]!=null?v[x]:''}):s}
+function t(k,v){var s=(T[lang]&&T[lang][k]!=null)?T[lang][k]:T.ms[k];if(Array.isArray(s))s=s[1];return fill(s,v)}
+function unit(key,n){var s=(T[lang]&&T[lang][key])||T.ms[key];if(Array.isArray(s))s=n===1?s[0]:s[1];return fill(s,{n:n.toLocaleString('en-US')})}
+
+/* ---------- helpers ---------- */
+var $=function(id){return document.getElementById(id)};
+function num(v){v=String(v||'').replace(/,/g,'').replace(/[^0-9.]/g,'');var n=parseFloat(v);return isFinite(n)&&n>0?Math.min(n,1e9):0}
+function f2(v){return v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function f0(v){return Math.round(v).toLocaleString('en-US')}
+function commas(v){var p=String(v).replace(/,/g,'').replace(/[^0-9.]/g,'').split('.');p[0]=p[0].replace(/^0+(?=\d)/,'').replace(/\B(?=(\d{3})+(?!\d))/g,',');return p.length>1?p[0]+'.'+p.slice(1).join('').slice(0,2):p[0]}
+function esc(s){return String(s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
+var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function tween(el,to,fmt){
+  fmt=fmt||f2;var from=el._v||0;el._v=to;
+  if(el._raf)cancelAnimationFrame(el._raf);
+  if(reduce||from===to){el.textContent=fmt(to);return}
+  var t0=performance.now(),dur=600;
+  (function step(now){var k=Math.min(1,(now-t0)/dur);k=1-Math.pow(1-k,3);el.textContent=fmt(from+(to-from)*k);if(k<1)el._raf=requestAnimationFrame(step)})(t0);
+}
+function bump(el){el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}
+var toastT;function toast(m){var x=$('toast');x.textContent=m;x.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){x.classList.remove('on')},1800)}
+function copyText(s){
+  function fb(){var ta=document.createElement('textarea');ta.value=s;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(e){}document.body.removeChild(ta);toast(t('copied'))}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(s).then(function(){toast(t('copied'))},fb)}else fb();
+}
+
+/* ---------- tabs ---------- */
+var tabs=[$('t-p'),$('t-c')],ind=$('tabInd');
+function showTab(i){tabs.forEach(function(x,j){x.setAttribute('aria-selected',i===j);$(x.getAttribute('aria-controls')).hidden=i!==j});ind.style.transform='translateX(calc('+(i*100)+'% + '+(i*6)+'px))';try{localStorage.setItem('o2tab',i)}catch(e){}if(i===1){resetBars();calcC()}}
+tabs.forEach(function(tb,i){tb.addEventListener('click',function(){showTab(i)})});
+
+/* ---------- inputs ---------- */
+function bindAmt(inp,fn){inp.addEventListener('input',function(){var pos=inp.value.length-(inp.selectionStart||0);inp.value=commas(inp.value);var np=Math.max(0,inp.value.length-pos);try{inp.setSelectionRange(np,np)}catch(e){}fn()})}
+bindAmt($('amt'),calcP);bindAmt($('camt'),calcC);
+[].forEach.call(document.querySelectorAll('.chips'),function(box){box.addEventListener('click',function(e){var c=e.target.closest('.chip');if(!c)return;$(box.dataset.target).value=commas(c.dataset.v);box.dataset.target==='amt'?calcP():calcC()})});
+$('cpP').addEventListener('click',function(){if($('waP')._s)copyText($('waP')._s)});
+$('cpC').addEventListener('click',function(){if($('waC')._s)copyText($('waC')._s)});
+
+/* ---------- PASSIVE ---------- */
+var lastTier=-2;
+function calcP(){
+  var a=num($('amt').value),ok=a>=MIN,r=ok?rate(a):0,d=a*r;
+  $('amtErr').hidden=ok||!$('amt').value;$('amtBox').classList.toggle('bad',!ok&&!!$('amt').value);
+  $('pRes').classList.toggle('dim',!ok);
+  tween($('pD'),d);tween($('pW'),d*7);tween($('pM'),d*30);tween($('pY'),d*365);
+  var be=ok?Math.ceil(1/r-1e-9):0,p=be/YEAR*100;
+  $('beDay').textContent=ok?t('be_val',{d:be}):'—';
+  $('rF1').style.width=p+'%';$('rF2').style.left=p+'%';$('rPin').style.left=p+'%';
+  tween($('pEnd'),ok?a+d*365:0);
+  var ti=ok?tierIdx(a):-1;
+  [].forEach.call(document.querySelectorAll('.tier'),function(el){el.classList.toggle('on',+el.dataset.i===ti)});
+  if(ti!==lastTier&&ti>=0){var el=document.querySelector('.tier.on');if(el)bump(el)}
+  lastTier=ti;
+  var s=ok?['O2Calculator | '+t('tab_p'),
+    t('amt_label')+': '+f2(a),
+    t('d_lbl')+': '+f2(d)+' USDT',t('w_lbl')+': '+f2(d*7)+' USDT',t('m_lbl')+': '+f2(d*30)+' USDT',t('y_lbl')+': '+f2(d*365)+' USDT',
+    t('be_lbl')+': '+t('be_val',{d:be}),t('end_lbl')+': '+f2(a+d*365)+' USDT'].join('\n'):'';
+  $('waP').href='https://wa.me/?text='+encodeURIComponent(s);$('waP')._s=s;
+}
+
+/* ---------- COMPOUNDING ---------- */
+var st={P:1,D:180},MAXN={1:364,7:52,30:12};
+var segBtns=[].slice.call(document.querySelectorAll('#seg button'));
+segBtns.forEach(function(b){b.addEventListener('click',function(){
+  if(b.getAttribute('aria-disabled')==='true'){b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');return}
+  setFreq(+b.dataset.p);calcC();
+})});
+$('seg').addEventListener('keydown',function(e){
+  var en=segBtns.filter(function(b){return b.getAttribute('aria-disabled')!=='true'});if(!en.length)return;
+  var i=en.findIndex(function(b){return +b.dataset.p===st.P});
+  if(e.key==='ArrowRight'||e.key==='ArrowDown')i=Math.min(en.length-1,i+1);else if(e.key==='ArrowLeft'||e.key==='ArrowUp')i=Math.max(0,i-1);else return;
+  e.preventDefault();setFreq(+en[i].dataset.p);en[i].focus();calcC();
+});
+function setFreq(P){
+  var max=MAXN[P],n=Math.min(max,Math.max(1,Math.round(st.D/P)));
+  st.P=P;st.D=n*P;var r=$('dur');r.max=max;r.value=n;
+  segBtns.forEach(function(b){b.setAttribute('aria-checked',+b.dataset.p===P);b.tabIndex=+b.dataset.p===P?0:-1});
+}
+$('dur').addEventListener('input',function(){st.D=+this.value*st.P;calcC()});
+function sim(c0,P,D){
+  var cap=c0,acc=0,cash=0,r0=rate(c0);
+  for(var d=1;d<=YEAR;d++){var p=cap*rate(cap);if(d<=D){acc+=p;if(d%P===0){cap+=acc;acc=0}}else cash+=p}
+  return{cap:cap,daily:cap*rate(cap),cash:cash,tot:cap+cash,plain:c0+c0*r0*YEAR};
+}
+function resetBars(){['bW','bN'].forEach(function(id){var el=$(id);el.style.transition='none';el.style.width='0';void el.offsetWidth;el.style.transition=''})}
+function fc(v){return v>=1000?f0(v):f2(v)}
+function rng(a,b){return a===b?t('be_val',{d:a}):t('rng',{a:a,b:b})}
+function calcC(){
+  var c0=num($('camt').value),ok=c0>=MIN;
+  $('camtErr').hidden=ok||!$('camt').value;$('camtBox').classList.toggle('bad',!ok&&!!$('camt').value);
+  var r0=rate(c0),en={},offs=[];
+  [1,7,30].forEach(function(P){en[P]=ok&&c0*r0*P>=MIN_COMPOUND});
+  segBtns.forEach(function(b){var P=+b.dataset.p;b.setAttribute('aria-disabled',!en[P]);if(ok&&!en[P])offs.push(t('fo_'+P,{m:f0(minCap(P))}))});
+  var any=en[1]||en[7]||en[30];
+  if(any&&!en[st.P])setFreq(en[1]?1:en[7]?7:30);
+  var ob=$('offs');ob.hidden=!(any&&offs.length);
+  ob.innerHTML=offs.map(function(s){return '<p>'+esc(s)+'</p>'}).join('')+'<p class="why">'+esc(t('off_why'))+'</p>';
+  $('cEmpty').hidden=any||!ok;$('cEmpty').textContent=t('none_ok',{m:f0(minCap(30))});
+  $('cRes').classList.toggle('dim',!any);$('slBlock').classList.toggle('dim',!any);
+  var n=Math.round(st.D/st.P),range=$('dur'),D=st.D,left=YEAR-D;
+  range.style.setProperty('--p',((n-1)/(+range.max-1)*100)+'%');
+  var key={1:'u_day',7:'u_week',30:'u_month'}[st.P],dur=unit(key,n);
+  $('cmpL').textContent=dur;$('cmpD').textContent=st.P>1?unit('u_day',D):'';
+  $('cashL').textContent=unit('u_day',left);
+  range.setAttribute('aria-valuetext',dur);
+  var R=any?sim(c0,st.P,D):{cap:0,daily:0,cash:0,tot:0,plain:0};
+  $('s1r').textContent=rng(1,D);$('s1t').textContent=t('s1_t',{dur:dur});
+  $('s1a').textContent=fc(c0);tween($('s1b'),R.cap,fc);
+  $('s2r').textContent=rng(D+1,YEAR);
+  $('s2s').textContent=fc(R.daily)+' USDT × '+unit('u_day',left);
+  tween($('s2v'),R.cash,fc);tween($('s3v'),R.tot,fc);
+  $('s3s').textContent=t('s3_s',{a:fc(R.cap),b:fc(R.cash)});
+  tween($('cTot'),R.tot,fc);tween($('cPlain'),R.plain,fc);
+  var mx=Math.max(R.tot,R.plain)||1;
+  $('bW').style.width=(R.tot/mx*100)+'%';$('bN').style.width=(R.plain/mx*100)+'%';
+  var diff=R.tot-R.plain;$('cExtra').textContent=t('extra',{x:fc(diff)});$('cExtra').hidden=!(diff>0.005);
+  if(!any){$('waC')._s='';return}
+  var s=['O2Calculator | '+t('tab_c'),
+    '1) '+t('s1_t',{dur:dur})+': '+fc(c0)+' → '+fc(R.cap)+' USDT',
+    '2) '+t('s2_t')+': '+fc(R.daily)+' USDT × '+unit('u_day',left)+' = '+fc(R.cash)+' USDT',
+    '3) '+t('s3_t')+': '+fc(R.tot)+' USDT',
+    t('bar_without')+': '+fc(R.plain)+' USDT ('+t('extra',{x:fc(diff)})+')'].join('\n');
+  $('waC').href='https://wa.me/?text='+encodeURIComponent(s);$('waC')._s=s;
+}
+
+/* ---------- language picker ---------- */
+var lb=$('langBtn'),ll=$('langList');
+ll.innerHTML=LANGS.map(function(L){return '<li role="option" tabindex="-1" data-v="'+L.v+'" aria-selected="false"><span class="flag">'+FLAG(L.f)+'</span>'+L.n+'</li>'}).join('');
+var opts=[].slice.call(ll.children);
+function openList(){ll.hidden=false;lb.setAttribute('aria-expanded','true');var cur=ll.querySelector('[aria-selected="true"]')||opts[0];cur.focus()}
+function closeList(f){ll.hidden=true;lb.setAttribute('aria-expanded','false');if(f)lb.focus()}
+lb.addEventListener('click',function(){ll.hidden?openList():closeList()});
+ll.addEventListener('click',function(e){var o=e.target.closest('li');if(!o)return;applyLang(o.dataset.v);closeList(true)});
+ll.addEventListener('keydown',function(e){
+  var i=opts.indexOf(document.activeElement);
+  if(e.key==='ArrowDown'){e.preventDefault();opts[Math.min(opts.length-1,i+1)].focus()}
+  else if(e.key==='ArrowUp'){e.preventDefault();opts[Math.max(0,i-1)].focus()}
+  else if(e.key==='Enter'||e.key===' '){e.preventDefault();if(i>=0){applyLang(opts[i].dataset.v);closeList(true)}}
+  else if(e.key==='Escape'||e.key==='Tab'){closeList(e.key==='Escape')}
+});
+lb.addEventListener('keydown',function(e){if(e.key==='ArrowDown'){e.preventDefault();openList()}});
+document.addEventListener('click',function(e){if(!ll.hidden&&!$('lang').contains(e.target))closeList()});
+
+function applyLang(l){
+  if(!T[l])l='ms';lang=l;
+  document.documentElement.lang=l;
+  var L=LANGS.filter(function(x){return x.v===l})[0];
+  $('langFlag').innerHTML=FLAG(L.f);$('langName').textContent=L.n;
+  opts.forEach(function(o){o.setAttribute('aria-selected',o.dataset.v===l)});
+  if(FONTS[l]&&!loaded[l]){var k=document.createElement('link');k.rel='stylesheet';k.href='https://fonts.googleapis.com/css2?family='+FONTS[l]+'&display=swap';document.head.appendChild(k);loaded[l]=1}
+  [].forEach.call(document.querySelectorAll('[data-i18n]'),function(el){el.textContent=t(el.dataset.i18n)});
+  try{localStorage.setItem('o2lang',l)}catch(e){}
+  calcP();calcC();
+}
+
+/* ---------- init ---------- */
+var startLang='ms';
+try{var q=new URLSearchParams(location.search).get('lang');var sv=localStorage.getItem('o2lang');startLang=(q&&T[q])?q:(sv&&T[sv])?sv:'ms'}catch(e){}
+setFreq(1);
+applyLang(startLang);
+try{if(+localStorage.getItem('o2tab')===1)showTab(1)}catch(e){}
+})();
+</script>
+</body>
+</html>
